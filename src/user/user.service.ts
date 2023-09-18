@@ -14,4 +14,11 @@ export class UserService {
   findOne(request: any) {
     return this.userModel.findOne(request);
   }
+
+  async find(request: any) {
+    console.log(request);
+    
+    const resp = await this.userModel.find(request)
+    return resp;
+  }
 }

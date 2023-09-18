@@ -14,30 +14,29 @@ import { AuthService } from './auth.service';
 export class AuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    console.log('here');
+    let request = context.switchToHttp().getRequest();
+    // console.log('here');
 
     // let accessToken: string = request.header('authorization');
 
-    let authorization: string = request.headers;
+    let { authorization } = request.headers;
+    // console.log(authorization);
 
-    if (!authorization) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
+    if (!authorization || authorization.trim() === '') {
+      throw new UnauthorizedException('Please provide token');
     }
+    const authorizationString = authorization.replace(/bearer/gim, '').trim();
 
-    // authorization = authorization?.substr(7, authorization?.length);
+    const decodedPayload = jwt.verify(authorizationString, 'anku');
 
-    const _res = jwt.verify(authorization, process.env.ACCESS_TOKEN_KEY) as {
-      data: { email: string };
-    };
+    const result = JSON.parse(JSON.stringify(decodedPayload)).data;
 
-    const result = await this.authService.findOne({
-      email: _res?.data?.email,
-    });
-
-    return true;
+    if (result) {
+      request['decoded'] = { ...result };
+      return true;
+    }
+    else {
+      throw  new HttpException("Unauthorized",401 )
+    }
   }
 }
